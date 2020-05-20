@@ -1,26 +1,44 @@
 package com.github.adminfaces.showcase.analytics.store;
 
-import com.github.adminfaces.showcase.analytics.model.PageStats;
-import com.github.adminfaces.showcase.analytics.model.PageView;
-import com.github.adminfaces.showcase.analytics.model.PageViewCountry;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.github.adminfaces.template.util.Assert.has;
 
-
-import javax.annotation.PostConstruct;
-import javax.ejb.*;
-import javax.json.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Serializable;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.PostConstruct;
+import javax.ejb.ConcurrencyManagement;
+import javax.ejb.ConcurrencyManagementType;
+import javax.ejb.Schedule;
+import javax.ejb.Singleton;
+import javax.ejb.Startup;
+import javax.ejb.TransactionManagement;
+import javax.ejb.TransactionManagementType;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
 
-import static com.github.adminfaces.template.util.Assert.has;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.github.adminfaces.showcase.analytics.model.PageStats;
+import com.github.adminfaces.showcase.analytics.model.PageView;
+import com.github.adminfaces.showcase.analytics.model.PageViewCountry;
 
 /**
  * Created by rmpestano on 01/05/17.
@@ -44,42 +62,53 @@ public class PageStatisticsStore implements Serializable {
     @PostConstruct
     public void initStatistics() {
         pageStatisticsMap = new ConcurrentHashMap<>();
-        log.info("Using {} as page statistics file store.", pagesStatsFilePath);
-        try {
-            File statisticsFile = new File(pagesStatsFilePath);
-            if (!statisticsFile.exists()) {
-                statisticsFile.createNewFile();
-            }
-            JsonArray persistedPageStats = Json.createReader(new FileReader(statisticsFile)).readObject().getJsonArray("statistics");
-            for (JsonValue jsonValue : persistedPageStats) {
-                JsonObject jsonObject = (JsonObject) jsonValue;
+//        log.info("Using {} as page statistics file store.", pagesStatsFilePath);
+//        try {
+//            File statisticsFile = new File(pagesStatsFilePath);
+//            if (!statisticsFile.exists()) {
+//                statisticsFile.createNewFile();
+//            }
+//            JsonArray persistedPageStats = Json.createReader(new FileReader(statisticsFile)).readObject().getJsonArray("statistics");
+//            for (JsonValue jsonValue : persistedPageStats) {
+//                JsonObject jsonObject = (JsonObject) jsonValue;
                 PageStats pageStats = new PageStats("1");
-                JsonArray pageViewsJson = jsonObject.getJsonArray("2");
+//                JsonArray pageViewsJson = jsonObject.getJsonArray("2");
                 List<PageView> pageViews = new ArrayList<>();
-                for (JsonValue value : pageViewsJson) {
-                    JsonObject object = (JsonObject) value;
-                    if (object == null || object.get("ip") == null || !viewedInCurrentYear(object.getString("date"))) {
-                        continue;
-                    }
-                    PageView pageView = new PageView(object.getString("ip"));
+//                for (JsonValue value : pageViewsJson) {
+//                    JsonObject object = (JsonObject) value;
+//                    if (object == null || object.get("ip") == null || !viewedInCurrentYear(object.getString("date"))) {
+//                        continue;
+//                    }
+                
+                PageView pageView2 = new PageView("127.0.0.12");
+                Calendar c2 = Calendar.getInstance();
+//                c.setTime(dateFormat.parse(object.getString("date")));
+                pageView2.setDate(c2);
+                pageView2.setCountry("Chile");//backward compat
+                pageView2.setCity("Valparaiso");//backward compat
+                pageView2.setLat("0.0");//backward compat
+                pageView2.setLon("0.0");//backward compat
+                pageView2.setHasIpInfo(false);//backward compat
+                
+                    PageView pageView = new PageView("127.0.0.1");
                     Calendar c = Calendar.getInstance();
-                    c.setTime(dateFormat.parse(object.getString("date")));
+//                    c.setTime(dateFormat.parse(object.getString("date")));
                     pageView.setDate(c);
-                    pageView.setCountry(object.containsKey("country") ? object.getString("country") : "");//backward compat
-                    pageView.setCity(object.containsKey("city") ? object.getString("city") : "");//backward compat
-                    pageView.setLat(object.containsKey("lat") ? object.getString("lat") : "");//backward compat
-                    pageView.setLon(object.containsKey("lon") ? object.getString("lon") : "");//backward compat
-                    pageView.setHasIpInfo(object.containsKey("hasIpInfo") ? object.getBoolean("hasIpInfo") : false);//backward compat
+                    pageView.setCountry("Chile");//backward compat
+                    pageView.setCity("Valparaiso");//backward compat
+                    pageView.setLat("0.0");//backward compat
+                    pageView.setLon("0.0");//backward compat
+                    pageView.setHasIpInfo(false);//backward compat
                     pageViews.add(pageView);
-                }
+//                }
                 pageStats.setPageViews(pageViews);
                 pageStatisticsMap.put(pageStats.getViewId(), pageStats);
-            }
-        } catch (Exception e) {
-            log.warn("Could not load page statistics", e);
-        } finally {
-            log.info("Finished reading page statistics store.");
-        }
+//            }
+//        } catch (Exception e) {
+//            log.warn("Could not load page statistics", e);
+//        } finally {
+//            log.info("Finished reading page statistics store.");
+//        }
     }
 
     private boolean viewedInCurrentYear(String date) {
